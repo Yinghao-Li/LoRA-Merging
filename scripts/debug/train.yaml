@@ -1,0 +1,43 @@
+task: "train"
+task_type: "causal_lm"
+
+dataset_name: "MATH"
+
+model_name_or_path: "../models/Meta-Llama-3.1-8B-Instruct"
+adapter_name: "baseline"
+output_dir: "./test-output"
+
+local_dataset_dir: "./datasets/"
+training_partition: "train"
+training_subsample: 1000
+disable_dataset_cache: true
+dataset_num_proc: 1
+
+assistant_label_only: true
+
+logging_steps: 100
+save_strategy: "no"
+
+max_seq_length: 2048
+disable_seq_length_filter: false
+num_train_epochs: 2
+
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 1
+
+use_peft_lora: true
+lora_r: 8
+lora_alpha: 32
+lora_dropout: 0.1
+lora_target_modules: "q_proj,v_proj,k_proj,o_proj,down_proj,up_proj,gate_proj"
+
+use_flash_attn: true
+gradient_checkpointing: false
+use_reentrant: false
+
+fp16: false
+bf16: true
+use_4bit_quantization: true
+bnb_4bit_compute_dtype: "bfloat16"
+
+report_to: "none"
