@@ -41,6 +41,9 @@ def main(args):
     training_df.rename(columns={"question": "instruction", "answer": "response"}, inplace=True)
     test_df.rename(columns={"question": "instruction", "answer": "response"}, inplace=True)
 
+    training_df["category"] = "gsm8k"
+    test_df["category"] = "gsm8k"
+
     training_output_dir = osp.join(args.output_dir, "train")
     os.makedirs(training_output_dir, exist_ok=True)
 
