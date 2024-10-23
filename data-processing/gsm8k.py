@@ -1,6 +1,6 @@
 """
 # Author: Yinghao Li
-# Modified: October 22nd, 2024
+# Modified: October 23rd, 2024
 # ---------------------------------------
 # Description: Download and pre-process the GSM8K dataset
 """
@@ -15,11 +15,13 @@ from typing import Optional
 from accelerate import Accelerator
 
 from transformers import HfArgumentParser
-from seqlbtoolkit.io import set_logging, logging_args, progress_bar
+from seqlbtoolkit.io import set_logging, logging_args
 
 
 logger = logging.getLogger(__name__)
 accelerator = Accelerator()
+
+DATASET_NAME = "gsm8k"
 
 
 @dataclass
@@ -31,13 +33,29 @@ class Arguments:
 
 
 def main(args):
+    logger.info(f"Downloading and processing the {DATASET_NAME} dataset...")
     splits = {"train": "main/train-00000-of-00001.parquet", "test": "main/test-00000-of-00001.parquet"}
     training_df = pd.read_parquet("hf://datasets/openai/gsm8k/" + splits["train"])
     test_df = pd.read_parquet("hf://datasets/openai/gsm8k/" + splits["test"])
 
-    output_dir = osp.abspath(args.output_dir)
-    if not osp.isdir(output_dir):
-        os.makedirs(output_dir)
+    training_df.rename(columns={"question": "instruction", "answer": "response"}, inplace=True)
+    test_df.rename(columns={"question": "instruction", "answer": "response"}, inplace=True)
+
+    training_output_dir = osp.join(args.output_dir, "train")
+    os.makedirs(training_output_dir, exist_ok=True)
+
+    test_output_dir = osp.join(args.output_dir, "test")
+    os.makedirs(test_output_dir, exist_ok=True)
+
+    logger.info(f"Saving the {DATASET_NAME} dataset to {args.output_dir}...")
+
+    training_df.to_parquet(osp.join(training_output_dir, f"{DATASET_NAME}.parquet"))
+    logger.info(f"Training dataset saved to {training_output_dir}")
+
+    test_df.to_parquet(osp.join(test_output_dir, f"{DATASET_NAME}.parquet"))
+    logger.info(f"Test dataset saved to {test_output_dir}")
+
+    return None
 
 
 if __name__ == "__main__":
