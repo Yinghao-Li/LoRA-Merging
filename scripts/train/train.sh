@@ -1,44 +1,44 @@
 set -e
 
-rank=8
+dataset_name="math"
 
-dataset_name="gsm8k"
-model_name="Meta-Llama-3.1-8B-Instruct"
+
+model_name="Llama-3.2-1B-Instruct"
 model_path="../models/$model_name"
 output_dir="./output"
-adapter_name="baseline-r$rank"
 
-local_dataset_dir="./datasets/"
+adapter_name=$dataset_name
+
+local_dataset_dir="../lora-merging-datasets/"
 training_partition="train"
 disable_dataset_cache=true
-dataset_num_proc=12
+dataset_num_proc=4
 
 logging_steps=100
-save_steps=100
 save_strategy="epoch"
 
-max_seq_length=2048
+max_seq_length=4096
 disable_seq_length_filter=false
 
-num_train_epochs=3
+num_train_epochs=5
 per_device_train_batch_size=2
-gradient_accumulation_steps=8
+gradient_accumulation_steps=2
 
 use_peft_lora=true
-lora_r=$rank
-lora_alpha=32
+lora_r=16
+lora_alpha=64
 lora_dropout=0.05
-lora_target_modules="q_proj,v_proj,k_proj,o_proj,down_proj,up_proj,gate_proj"
+lora_target_modules="q_proj,v_proj"
 
 use_flash_attn=false
 gradient_checkpointing=false
 use_reentrant=false
 ddp_find_unused_parameters=false
 
-fp16=true
-bf16=false
+fp16=false
+bf16=true
 use_4bit_quantization=true
-bnb_4bit_compute_dtype="float16"
+bnb_4bit_compute_dtype="bfloat16"
 
 report_to="wandb"
 project_name="$model_name>>$dataset_name"
@@ -52,12 +52,10 @@ accelerate launch --num_processes=2 --main_process_port=30500 ./run/main.py \
   --output_dir $output_dir \
   --local_dataset_dir $local_dataset_dir \
   --dataset_name $dataset_name \
-  --training_partition $training_partition \
   --disable_dataset_cache $disable_dataset_cache \
   --dataset_num_proc $dataset_num_proc \
   --disable_seq_length_filter $disable_seq_length_filter \
   --logging_steps $logging_steps \
-  --save_steps $save_steps \
   --save_strategy $save_strategy \
   --max_seq_length $max_seq_length \
   --num_train_epochs $num_train_epochs \

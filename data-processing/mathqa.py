@@ -2,10 +2,10 @@
 # Author: Yinghao Li
 # Modified: October 23rd, 2024
 # ---------------------------------------
-# Description: Download and pre-process the SVAMP dataset
+# Description: Download and pre-process the MathQA dataset
 
-Notice that the `equation` column is ignored
-This dataset contains only 700 data points
+The dataset is pre-processed so that the instruction column contains the problem and options,
+and the response column contains the rationale and the correct answer. 
 """
 
 import os

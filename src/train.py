@@ -1,6 +1,6 @@
 """
 # Author: Yinghao Li
-# Modified: August 30th, 2024
+# Modified: October 24th, 2024
 # ---------------------------------------
 # Description:
 
@@ -28,7 +28,7 @@ from torch.utils.data import DataLoader
 from .dataset import CausalLMDataset
 from .collate import DataCollatorForLanguageModeling
 
-from trl import SFTTrainer, SFTConfig, is_xpu_available
+from trl import SFTTrainer, is_xpu_available
 from seqlbtoolkit.io import save_json, dumps_yaml, progress_bar
 
 logger = get_logger(__name__)
@@ -63,8 +63,6 @@ class CausalLMTrainer:
         self.task = task
 
         self.lora_ckpt_dir = self.training_args.output_dir
-        if self.model_args.adapter_name:
-            self.lora_ckpt_dir = osp.join(self.lora_ckpt_dir, self.model_args.adapter_name)
         if self.model_args.checkpoint_idx is not None:
             self.lora_ckpt_dir = osp.join(self.lora_ckpt_dir, f"checkpoint-{self.model_args.checkpoint_idx}")
 
@@ -91,11 +89,6 @@ class CausalLMTrainer:
 
     def prepare_for_inference(self):
         self.load_model_and_tokenizer()
-        self.initialize_datasets()
-        return self
-
-    def prepare_for_inference_moe(self):
-        self.load_tokenizer_model_adapters()
         self.initialize_datasets()
         return self
 
@@ -220,13 +213,6 @@ class CausalLMTrainer:
             )
 
         training_args = copy.deepcopy(self.training_args)
-        if self.model_args.adapter_name:
-            training_args.output_dir = osp.join(self.training_args.output_dir, self.model_args.adapter_name)
-        if self.data_args.subset_ids_path:
-            subset_idx = osp.basename(self.data_args.subset_ids_path).replace(".json", "").split("-")[-1]
-            training_args.output_dir = osp.join(
-                self.training_args.output_dir, self.model_args.subset_ft_folder_name, subset_idx
-            )
         training_args.remove_unused_columns = False
         # Step 5: Define the Trainer
 
@@ -234,10 +220,9 @@ class CausalLMTrainer:
             model=self.model,
             tokenizer=self.tokenizer,
             args=training_args,
-            train_dataset=self.datasets.training_ds,
-            eval_dataset=self.datasets.valid_ds,
+            train_dataset=self.datasets.ds,
             peft_config=peft_config,
-            packing=self.data_args.packing,
+            packing=False,
             dataset_text_field=self.data_args.dataset_text_field,
             dataset_num_proc=self.data_args.dataset_num_proc,
             max_seq_length=self.data_args.max_seq_length,
@@ -280,8 +265,6 @@ class CausalLMTrainer:
 
         if accelerator.is_local_main_process:
             output_dir = self.training_args.output_dir
-            if self.model_args.adapter_name:
-                output_dir = osp.join(self.training_args.output_dir, self.model_args.adapter_name)
 
             self.trainer.save_model(output_dir)
 
@@ -307,10 +290,6 @@ class CausalLMTrainer:
 
         self.tokenizer.padding_side = "left"
 
-        if self.task == "grad":
-            for name, param in self.model.named_parameters():
-                if "lora" in name.lower():
-                    param.requires_grad = True
         return self
 
     def load_tokenizer_model_adapters(self):
@@ -377,8 +356,6 @@ class CausalLMTrainer:
             indexed_results = [{"idx": idx, "generated": gen} for idx, gen in zip(test_ds["instance_idx"], results)]
 
             output_dir = self.training_args.output_dir
-            if self.model_args.adapter_name:
-                output_dir = osp.join(self.training_args.output_dir, self.model_args.adapter_name)
             if self.model_args.checkpoint_idx is not None:
                 output_dir = osp.join(output_dir, f"checkpoint-{self.model_args.checkpoint_idx}")
 
