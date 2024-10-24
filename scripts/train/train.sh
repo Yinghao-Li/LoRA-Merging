@@ -1,6 +1,6 @@
 set -e
 
-dataset_name="math"
+dataset_name="gsm8k"
 
 
 model_name="Llama-3.2-1B-Instruct"
@@ -44,7 +44,7 @@ report_to="wandb"
 project_name="$model_name>>$dataset_name"
 run_name="r${lora_r}.a${lora_alpha}"
 
-CUDA_VISIBLE_DEVICES="0,1" \
+CUDA_VISIBLE_DEVICES="2,3" \
 PYTHONPATH="." \
 accelerate launch --num_processes=2 --main_process_port=30500 ./run/main.py \
   --model_name_or_path $model_path \

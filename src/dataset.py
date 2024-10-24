@@ -26,7 +26,6 @@ class CausalLMDataset:
         max_prompt_length: int = 128,
         disable_dataset_cache: bool = False,
         disable_seq_length_filter: bool = False,
-        n_experts: int = 0,
         seed: int = 0,
         **kwargs,
     ) -> None:
@@ -49,14 +48,13 @@ class CausalLMDataset:
         self.subset_ids = None
         self.subset_name = None
 
-        self.n_experts = n_experts
-
     def load(self) -> None:
         assert self.local_ds_dir, "You must provide a local dataset directory to load the dataset."
 
         ds_path = osp.join(self.local_ds_dir, self.partition, f"{self.ds_name}.parquet")
         logger.info(f"Loding dataset {ds_path}")
-        self.ds = load_dataset("parquet", data_files=ds_path, split=self.partition)
+        self.ds = load_dataset("parquet", data_files={self.partition: ds_path})
+        self.ds = self.ds[self.partition]
 
         self.subsample_instances()
 

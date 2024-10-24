@@ -23,7 +23,7 @@ __all__ = ["TrainingArguments", "PipelineArguments", "ModelArguments", "DataArgu
 class PipelineArguments:
     task: Optional[str] = field(
         default="train",
-        metadata={"choices": ("train", "infer"), "help": "The task to run the pipeline."},
+        metadata={"choices": ("train", "infer", "infer-vllm"), "help": "The task to run the pipeline."},
     )
     task_type: Optional[str] = field(
         default="causal_lm",
@@ -113,6 +113,10 @@ class ModelArguments:
         default=False,
         metadata={"help": "Disable training adapters."},
     )
+    inference_temperature: Optional[float] = field(
+        default=0,
+        metadata={"help": "Temperature for inference."},
+    )
 
     def __post_init__(self):
         if self.checkpoint_idx is not None and self.checkpoint_idx < 0:
@@ -155,12 +159,19 @@ class DataArguments:
         default=False,
         metadata={"help": "Use assistant labels only for gradient calculation."},
     )
+    inference_dir: Optional[str] = field(
+        default="none",
+        metadata={"help": "The folder to save the inference results."},
+    )
 
     def __post_init__(self):
         if self.subsample < 0:
             raise ValueError("Subsample values must be greater than or equal to 0.")
         if self.subsample > 1:
             self.subsample = int(self.subsample)
+
+        if self.inference_dir == "none":
+            self.inference_dir = None
 
 
 def argument_processing(pipeline_args, model_args, data_args, training_args):

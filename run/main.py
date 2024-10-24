@@ -31,6 +31,8 @@ def main(pipeline_args, model_args, data_args, training_args):
         trainer.train()
     elif pipeline_args.task == "infer":
         trainer.infer()
+    elif pipeline_args.task == "infer-vllm":
+        trainer.infer_vllm()
     else:
         logger.error(f"Invalid task: {pipeline_args.task}")
 

@@ -24,6 +24,8 @@ from transformers import (
 )
 from transformers.pipelines.pt_utils import KeyDataset
 from torch.utils.data import DataLoader
+from vllm import LLM, SamplingParams
+from vllm.lora.request import LoRARequest
 
 from .dataset import CausalLMDataset
 from .collate import DataCollatorForLanguageModeling
@@ -70,13 +72,8 @@ class CausalLMTrainer:
             self.prepare_for_finetuning()
         elif task == "infer":
             self.prepare_for_inference()
-        elif task == "infer-moe":
-            self.prepare_for_inference_moe()
-        elif task == "embed":
-            self.prepare_for_inference()
-        elif task == "grad":
-            self.prepare_for_inference()
-            self.load_optimizer()
+        elif task == "infer-vllm":
+            self.prepare_for_inference_vllm()
         else:
             raise ValueError(f"Invalid task: {task}. Must be one of 'train', 'infer', 'embed'.")
 
@@ -89,6 +86,20 @@ class CausalLMTrainer:
 
     def prepare_for_inference(self):
         self.load_model_and_tokenizer()
+        self.initialize_datasets()
+        return self
+
+    def prepare_for_inference_vllm(self):
+        model_dir = self.model_args.model_name_or_path
+        if self.training_args.output_dir:
+            model_dir = self.training_args.output_dir
+
+        self.model = LLM(
+            model=self.model_args.model_name_or_path,
+            enforce_eager=True,
+            enable_lora=True,
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
         self.initialize_datasets()
         return self
 
@@ -165,12 +176,14 @@ class CausalLMTrainer:
 
     def initialize_datasets(self):
         # Step 2: Load the dataset
+        partition = "train"
+        if "infer" in self.task:
+            partition = "test"
 
         self.datasets = (
             CausalLMDataset(
                 seed=self.training_args.seed,
-                for_grad_collection=self.task == "grad",
-                n_experts=len(self.model_args.moe_adapter_dirs) if self.model_args.moe_adapter_dirs else 0,
+                partition=partition,
                 **asdict(self.data_args),
             )
             .load()
@@ -320,6 +333,46 @@ class CausalLMTrainer:
 
         else:
             raise ValueError("No output directory specified for loading the optimizer state.")
+        return None
+
+    def infer_vllm(self):
+        logger.info(
+            f"Initializing pipeline for text generation with temperature {self.model_args.inference_temperature}"
+        )
+        test_ds = self.datasets.ds
+
+        logger.info("Generating responses...")
+
+        outputs = self.model.generate(
+            test_ds["text"],
+            sampling_params=SamplingParams(
+                temperature=self.model_args.inference_temperature,
+                max_tokens=self.data_args.max_new_tokens,
+            ),
+            lora_request=LoRARequest(
+                lora_name="default",
+                lora_int_id=1,
+                lora_path=self.training_args.output_dir,
+            ),
+        )
+
+        logger.info("Saving results.")
+        indexed_results = list()
+        for idx, output in zip(test_ds["instance_idx"], outputs):
+            generated_text = output.outputs[0].text
+            indexed_results.append({"idx": idx, "generated": generated_text})
+
+        output_dir = self.training_args.output_dir
+        if self.data_args.inference_dir:
+            output_dir = osp.join(output_dir, self.data_args.inference_dir)
+        elif self.model_args.checkpoint_idx is not None:
+            output_dir = osp.join(output_dir, f"checkpoint-{self.model_args.checkpoint_idx}")
+
+        output_path = osp.join(output_dir, self.data_args.output_file_name)
+        save_json(indexed_results, output_path)
+
+        logger.info(f"Results saved to {output_path}.")
+
         return None
 
     def infer(self):
