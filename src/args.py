@@ -1,6 +1,6 @@
 """
 # Author: Yinghao Li
-# Modified: October 24th, 2024
+# Modified: October 25th, 2024
 # ---------------------------------------
 # Description: Self-defined arguments
 """
@@ -162,6 +162,10 @@ class DataArguments:
     inference_dir: Optional[str] = field(
         default="none",
         metadata={"help": "The folder to save the inference results."},
+    )
+    inference_result_file: Optional[str] = field(
+        default="results.json",
+        metadata={"help": "The file name to save the inference output."},
     )
 
     def __post_init__(self):

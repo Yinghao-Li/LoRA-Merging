@@ -1,6 +1,6 @@
 """
 # Author: Yinghao Li
-# Modified: October 24th, 2024
+# Modified: October 25th, 2024
 # ---------------------------------------
 # Description:
 
@@ -96,8 +96,8 @@ class CausalLMTrainer:
 
         self.model = LLM(
             model=self.model_args.model_name_or_path,
-            enforce_eager=True,
             enable_lora=True,
+            max_model_len=self.data_args.max_seq_length,
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
         self.initialize_datasets()
@@ -358,17 +358,17 @@ class CausalLMTrainer:
 
         logger.info("Saving results.")
         indexed_results = list()
-        for idx, output in zip(test_ds["instance_idx"], outputs):
+        for idx, output in zip(test_ds["idx"], outputs):
             generated_text = output.outputs[0].text
             indexed_results.append({"idx": idx, "generated": generated_text})
 
         output_dir = self.training_args.output_dir
         if self.data_args.inference_dir:
-            output_dir = osp.join(output_dir, self.data_args.inference_dir)
+            output_dir = self.data_args.inference_dir
         elif self.model_args.checkpoint_idx is not None:
             output_dir = osp.join(output_dir, f"checkpoint-{self.model_args.checkpoint_idx}")
 
-        output_path = osp.join(output_dir, self.data_args.output_file_name)
+        output_path = osp.join(output_dir, self.data_args.inference_result_file)
         save_json(indexed_results, output_path)
 
         logger.info(f"Results saved to {output_path}.")

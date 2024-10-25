@@ -1,11 +1,8 @@
 """
 # Author: Yinghao Li
-# Modified: October 23rd, 2024
+# Modified: October 25th, 2024
 # ---------------------------------------
-# Description: Download and pre-process the SVAMP dataset
-
-Notice that the `equation` column is ignored
-This dataset contains only 700 data points
+# Description: Download and pre-process the GSM8K dataset
 """
 
 import os
@@ -24,7 +21,7 @@ from seqlbtoolkit.io import set_logging, logging_args
 logger = logging.getLogger(__name__)
 accelerator = Accelerator()
 
-DATASET_NAME = "svamp"
+DATASET_NAME = "gsm8k"
 
 
 @dataclass
@@ -37,16 +34,18 @@ class Arguments:
 
 def main(args):
     logger.info(f"Downloading and processing the {DATASET_NAME} dataset...")
-    splits = {"train": "data/train-00000-of-00001.parquet", "test": "data/test-00000-of-00001.parquet"}
-    training_df = pd.read_parquet("hf://datasets/ChilleD/SVAMP/" + splits["train"])
-    test_df = pd.read_parquet("hf://datasets/ChilleD/SVAMP/" + splits["test"])
+    splits = {"train": "main/train-00000-of-00001.parquet", "test": "main/test-00000-of-00001.parquet"}
+    training_df = pd.read_parquet("hf://datasets/openai/gsm8k/" + splits["train"])
+    test_df = pd.read_parquet("hf://datasets/openai/gsm8k/" + splits["test"])
 
-    training_df = training_df[["question_concat", "Answer", "Type"]]
+    training_df.rename(columns={"question": "instruction", "answer": "response"}, inplace=True)
+    test_df.rename(columns={"question": "instruction", "answer": "response"}, inplace=True)
 
-    training_df.rename(
-        columns={"question_concat": "instruction", "Answer": "response", "Type": "category"}, inplace=True
-    )
-    test_df.rename(columns={"question_concat": "instruction", "Answer": "response", "Type": "category"}, inplace=True)
+    training_df["category"] = "gsm8k"
+    test_df["category"] = "gsm8k"
+
+    training_df["idx"] = [f"gsm8k.gsm8k.train.{idx}" for idx in range(len(training_df))]
+    test_df["idx"] = [f"gsm8k.gsm8k.test.{idx}" for idx in range(len(test_df))]
 
     training_output_dir = osp.join(args.output_dir, "train")
     os.makedirs(training_output_dir, exist_ok=True)

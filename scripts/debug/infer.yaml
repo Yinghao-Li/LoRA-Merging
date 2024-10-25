@@ -7,7 +7,7 @@ adapter_name: "gsm8k"
 output_dir: "./output"
 
 local_dataset_dir: "../lora-merging-datasets/"
-subsample: 0
+subsample: 100
 disable_dataset_cache: true
 dataset_num_proc: 1
 
@@ -15,7 +15,7 @@ logging_steps: 100
 save_strategy: "no"
 
 max_seq_length: 4096
-max_new_tokens: 2048
+max_new_tokens: 1024
 disable_seq_length_filter: false
 
 use_peft_lora: true
