@@ -91,3 +91,27 @@ class EvalFuncs:
         }
 
         return report
+
+    @staticmethod
+    def svamp(df):
+        n_correct = 0
+        correct_ids = []
+        incorrect_ids = []
+        for idx, pred_str, ref_str in zip(df["idx"], df["generated"], df["response"]):
+            if pred_str.strip() == ref_str.strip():
+                correct_ids.append(idx)
+                n_correct += 1
+            else:
+                incorrect_ids.append(idx)
+
+        accuracy = n_correct / len(df)
+
+        report = {
+            "metrics": {
+                "accuracy": accuracy,
+            },
+            "incorrect_ids": incorrect_ids,
+            "correct_ids": correct_ids,
+        }
+
+        return report
