@@ -25,7 +25,7 @@ bnb_4bit_compute_dtype="bfloat16"
 
 report_to="none"
 
-CUDA_VISIBLE_DEVICES=0 \
+CUDA_VISIBLE_DEVICES=1 \
 PYTHONPATH="." \
 python ./run/main.py \
   --model_name_or_path $model_path \

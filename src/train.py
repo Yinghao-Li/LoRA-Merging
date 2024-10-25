@@ -75,19 +75,19 @@ class CausalLMTrainer:
         elif task == "infer-vllm":
             self.prepare_for_inference_vllm()
         else:
-            raise ValueError(f"Invalid task: {task}. Must be one of 'train', 'infer', 'embed'.")
+            raise ValueError(f"Invalid task: {task}. Must be one of 'train', 'infer', 'infer-vllm'.")
 
     def prepare_for_finetuning(self):
         self.initialize_tokenizer()
         self.initialize_model()
         self.initialize_datasets()
         self.initialize_trainer()
-        return self
+        return None
 
     def prepare_for_inference(self):
         self.load_model_and_tokenizer()
         self.initialize_datasets()
-        return self
+        return None
 
     def prepare_for_inference_vllm(self):
         model_dir = self.model_args.model_name_or_path
@@ -101,7 +101,7 @@ class CausalLMTrainer:
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
         self.initialize_datasets()
-        return self
+        return None
 
     def initialize_model(self):
 
@@ -159,7 +159,7 @@ class CausalLMTrainer:
 
         self.model.config.use_cache = not self.training_args.gradient_checkpointing
 
-        return self
+        return None
 
     def initialize_tokenizer(self):
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -169,10 +169,20 @@ class CausalLMTrainer:
             add_eos_token=False,
             legacy=False,
         )
-        if not self.tokenizer.pad_token:
+        self.setup_padding()
+        return None
+
+    def setup_padding(self):
+        if "llama-3.2" in self.model_args.model_name_or_path.lower():
+            self.tokenizer.pad_token = "<|finetune_right_pad_id|>"
+            self.tokenizer.pad_token_id = self.tokenizer.convert_tokens_to_ids(self.tokenizer.pad_token)
+
+        elif not self.tokenizer.pad_token:
             self.tokenizer.add_special_tokens({"pad_token": "<pad>"})
             self.tokenizer_size_changed = True
+
         self.tokenizer.padding_side = "right"
+        return None
 
     def initialize_datasets(self):
         # Step 2: Load the dataset
@@ -194,7 +204,7 @@ class CausalLMTrainer:
             )
         )
 
-        return self
+        return None
 
     def initialize_trainer(self):
         # Step 3: Define the training arguments
@@ -227,6 +237,8 @@ class CausalLMTrainer:
 
         training_args = copy.deepcopy(self.training_args)
         training_args.remove_unused_columns = False
+        training_args.output_dir = osp.join(training_args.output_dir, "ckpts")
+
         # Step 5: Define the Trainer
 
         self.trainer = SFTTrainer(
@@ -277,9 +289,7 @@ class CausalLMTrainer:
         """
 
         if accelerator.is_local_main_process:
-            output_dir = self.training_args.output_dir
-
-            self.trainer.save_model(output_dir)
+            self.trainer.save_model(self.training_args.output_dir)
 
         return None
 

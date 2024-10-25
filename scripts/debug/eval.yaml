@@ -1,0 +1,2 @@
+inference_dir: "./output/gsm8k-inference/"
+reference_path: "../lora-merging-datasets/test/gsm8k.parquet"
