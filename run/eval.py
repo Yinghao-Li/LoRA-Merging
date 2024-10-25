@@ -6,7 +6,6 @@
 """
 
 import sys
-import re
 import os.path as osp
 import logging
 import pandas as pd
@@ -32,6 +31,14 @@ class Arguments:
     reference_path: Optional[str] = field(
         metadata={"help": "The output directory to save the dataset."},
     )
+    inference_result_file: Optional[str] = field(
+        default="results.json",
+        metadata={"help": "The file containing the evaluation results."},
+    )
+    report_name: Optional[str] = field(
+        default="report",
+        metadata={"help": "The name of the report file."},
+    )
     dataset: Optional[str] = field(
         default=None,
         metadata={"help": "The dataset name."},
@@ -45,7 +52,7 @@ def main(args):
         logger.info(f"Evaluating...")
 
     logger.info(f"Loading inference results from {args.inference_dir}...")
-    inference_df = pd.read_json(osp.join(args.inference_dir, "results.json"))
+    inference_df = pd.read_json(osp.join(args.inference_dir, args.inference_result_file))
     logger.info(f"Loaded {len(inference_df)} results.")
 
     logger.info(f"Loading reference data from {args.reference_path}...")
@@ -65,7 +72,7 @@ def main(args):
     logger.info("Results:")
     logger.info(dumps_yaml({"metrics": report["metrics"], "n_missing": len(missing_ids)}))
 
-    save_yaml(report, osp.join(args.inference_dir, "report.yaml"))
+    save_yaml(report, osp.join(args.inference_dir, f"{args.report_name}.yaml"))
 
     return None
 

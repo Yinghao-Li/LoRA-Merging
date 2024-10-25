@@ -1,6 +1,6 @@
 set -e
 
-dataset_name="math"
+dataset_name="mathqa"
 
 
 model_name="Llama-3.2-1B-Instruct"

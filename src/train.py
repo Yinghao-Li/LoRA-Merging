@@ -95,7 +95,7 @@ class CausalLMTrainer:
 
         self.model = LLM(
             model=self.model_args.model_name_or_path,
-            enable_lora=True,
+            enable_lora=True if not self.model_args.disable_adapters else False,
             max_model_len=self.data_args.max_seq_length,
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
@@ -352,17 +352,20 @@ class CausalLMTrainer:
 
         logger.info("Generating responses...")
 
+        lora_request = None
+        if not self.model_args.disable_adapters:
+            lora_request = LoRARequest(
+                lora_name="default",
+                lora_int_id=1,
+                lora_path=self.training_args.output_dir,
+            )
         outputs = self.model.generate(
             test_ds["text"],
             sampling_params=SamplingParams(
                 temperature=self.model_args.inference_temperature,
                 max_tokens=self.data_args.max_new_tokens,
             ),
-            lora_request=LoRARequest(
-                lora_name="default",
-                lora_int_id=1,
-                lora_path=self.training_args.output_dir,
-            ),
+            lora_request=lora_request,
         )
 
         logger.info("Saving results.")

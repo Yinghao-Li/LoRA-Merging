@@ -1,14 +1,17 @@
 set -e
 
-dataset_name="math"
+dataset_name="gsm8k"
 
 
 model_name="Llama-3.2-1B-Instruct"
 model_path="../models/$model_name"
 output_dir="./output"
 inference_dir="$output_dir/$dataset_name-inference"
+inference_result_file="results.json"
 
 adapter_name=$dataset_name
+
+disable_adapters=false
 
 local_dataset_dir="../lora-merging-datasets/"
 disable_dataset_cache=true
@@ -30,8 +33,10 @@ PYTHONPATH="." \
 python ./run/main.py \
   --model_name_or_path $model_path \
   --adapter_name $adapter_name \
+  --disable_adapters $disable_adapters \
   --output_dir $output_dir \
   --inference_dir $inference_dir \
+  --inference_result_file $inference_result_file \
   --local_dataset_dir $local_dataset_dir \
   --dataset_name $dataset_name \
   --disable_dataset_cache $disable_dataset_cache \
