@@ -8,9 +8,8 @@ Causal LM Trainer including fine-tuning and inference
 """
 
 import torch
-import os
-import os.path as osp
 import copy
+import os.path as osp
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import tqdm
@@ -31,7 +30,7 @@ from .dataset import CausalLMDataset
 from .collate import DataCollatorForLanguageModeling
 
 from trl import SFTTrainer, is_xpu_available
-from seqlbtoolkit.io import save_json, dumps_yaml, progress_bar
+from seqlbtoolkit.io import save_json
 
 logger = get_logger(__name__)
 accelerator = Accelerator()

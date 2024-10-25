@@ -1,2 +1,3 @@
-inference_dir: "./output/gsm8k-inference/"
-reference_path: "../lora-merging-datasets/test/gsm8k.parquet"
+dataset: "math"
+inference_dir: "./output/math-inference/"
+reference_path: "../lora-merging-datasets/test/math.parquet"

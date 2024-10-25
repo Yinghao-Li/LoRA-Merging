@@ -2,7 +2,7 @@
 # Author: Yinghao Li
 # Modified: October 25th, 2024
 # ---------------------------------------
-# Description: Evaluate the GSM8K results
+# Description: Evaluate the generated results
 """
 
 import sys
@@ -17,11 +17,11 @@ from accelerate import Accelerator
 from transformers import HfArgumentParser
 from seqlbtoolkit.io import set_logging, logging_args, save_yaml, dumps_yaml
 
+from src.eval_funcs import EvalFuncs
+
 
 logger = logging.getLogger(__name__)
 accelerator = Accelerator()
-
-DATASET_NAME = "gsm8k"
 
 
 @dataclass
@@ -32,10 +32,17 @@ class Arguments:
     reference_path: Optional[str] = field(
         metadata={"help": "The output directory to save the dataset."},
     )
+    dataset: Optional[str] = field(
+        default=None,
+        metadata={"help": "The dataset name."},
+    )
 
 
 def main(args):
-    logger.info(f"Evaluating {DATASET_NAME}...")
+    if args.dataset is not None:
+        logger.info(f"Evaluating {args.dataset}...")
+    else:
+        logger.info(f"Evaluating...")
 
     logger.info(f"Loading inference results from {args.inference_dir}...")
     inference_df = pd.read_json(osp.join(args.inference_dir, "results.json"))
@@ -51,33 +58,12 @@ def main(args):
 
     missing_ids = sorted(list(set(inference_df["idx"]) - set(df["idx"])))
 
-    n_correct = 0
-    correct_ids = []
-    incorrect_ids = []
-    for idx, pred_str, ref_str in zip(df["idx"], df["generated"], df["response"]):
-        try:
-            pred = re.search(r"####\s*(.+)", pred_str).group(1).strip()
-        except AttributeError:
-            pred = "missing"
+    eval_func = getattr(EvalFuncs, args.dataset)
+    report = eval_func(df)
+    report["missing_ids"] = missing_ids
 
-        ref = re.search(r"####\s*(.+)", ref_str).group(1).strip()
-
-        if pred == ref:
-            correct_ids.append(idx)
-            n_correct += 1
-        else:
-            incorrect_ids.append(idx)
-
-    accuracy = n_correct / len(df)
-
-    report = {
-        "accuracy": accuracy,
-        "missing_ids": missing_ids,
-        "incorrect_ids": incorrect_ids,
-        "correct_ids": correct_ids,
-    }
     logger.info("Results:")
-    logger.info(dumps_yaml({"accuracy": accuracy, "n_missing": len(missing_ids)}))
+    logger.info(dumps_yaml({"metrics": report["metrics"], "n_missing": len(missing_ids)}))
 
     save_yaml(report, osp.join(args.inference_dir, "report.yaml"))
 
