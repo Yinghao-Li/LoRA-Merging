@@ -1,13 +1,13 @@
 task: "train"
 
-dataset_name: "gsm8k"
+dataset_name: "mathqa"
 
 model_name_or_path: "../models/Llama-3.2-1B-Instruct"
 adapter_name: "gsm8k"
 output_dir: "./test-output"
 
 local_dataset_dir: "../lora-merging-datasets/"
-subsample: 0
+subsample: 1000
 disable_dataset_cache: true
 dataset_num_proc: 1
 
