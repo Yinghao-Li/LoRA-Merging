@@ -46,9 +46,14 @@ class EvalFuncs:
             try:
                 pred = re.search(r"So the answer is\s*(.+)", pred_str).group(1).strip()
             except AttributeError:
-                pred = "missing"
+                last_line = pred_str.strip().splitlines()[-1].strip()
+                preds = re.findall(r"\b\(?[a-zA-Z]\)", last_line)
+                pred = preds[0] if preds else "missing"
 
             ref = re.search(r"So the answer is\s*(.+)", ref_str).group(1).strip()
+
+            pred = re.sub(r"[^a-zA-Z]+", "", pred)
+            ref = re.sub(r"[^a-zA-Z]+", "", ref)
 
             if pred == ref:
                 correct_ids.append(idx)

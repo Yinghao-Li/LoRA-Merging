@@ -1,6 +1,6 @@
 set -e
 
-dataset_name="gsm8k"
+dataset_name="mathqa"
 
 
 model_name="Llama-3.2-1B-Instruct"
@@ -28,7 +28,7 @@ bnb_4bit_compute_dtype="bfloat16"
 
 report_to="none"
 
-CUDA_VISIBLE_DEVICES=0 \
+CUDA_VISIBLE_DEVICES=2 \
 PYTHONPATH="." \
 python ./run/main.py \
   --model_name_or_path $model_path \

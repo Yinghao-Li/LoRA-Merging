@@ -1,9 +1,12 @@
-dataset="gsm8k"
+dataset="mathqa"
 inference_dir="./output/$dataset-inference"
-inference_result_file="results.json"
 reference_path="../lora-merging-datasets/test/$dataset.parquet"
 
+inference_result_file="results.json"
+# inference_result_file="results-no-adapters.json"
+
 report_name="report"
+# report_name="report-no-adapters"
 
 
 PYTHONPATH="." python ./run/eval.py \
